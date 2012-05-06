@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<resources>
+    <string name="app_name">Telecommand</string>
+    <string-array name="funcbas">
+        <item>Posicion inicial</item>
+        <item>Ladrar</item>
+        <item>Bailar</item>
+        <item>Sentarse</item>
+        <item>Acostarse</item>
+        <item>Rogar</item>
+    </string-array>
+</resources>
