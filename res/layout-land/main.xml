@@ -111,14 +111,16 @@
 				            android:id="@+id/encendidoMotores"
 				            android:layout_width="fill_parent"
 				            android:layout_height="wrap_content"
-				            android:layout_gravity="center"/>
+				            android:layout_gravity="center"
+				            android:onClick="toggleMotors"/>
                         <ToggleButton android:textOn="Apagar LED's"
 				            android:textOff="Prender LED's"
 				            android:checked="false"
 				            android:id="@+id/encendidoLEDS"
 				            android:layout_width="fill_parent"
 				            android:layout_height="wrap_content"
-				            android:layout_gravity="center"/>
+				            android:layout_gravity="center"
+				            android:onClick="toggleLEDs"/>
                     </LinearLayout>>
                     <LinearLayout android:orientation="vertical"
                         android:layout_width="0dp"
@@ -135,6 +137,7 @@
                         <Button android:text="Realizar Ping"
                             android:layout_width="fill_parent"
                             android:layout_height="wrap_content"
+                            android:onClick="pingMethod"
                             android:id="@+id/btn_ping"/>
                     </LinearLayout>
                 </LinearLayout>
@@ -304,7 +307,8 @@
                		<Button android:text="Guardar cambios"
                		    android:layout_width="wrap_content"
                		    android:layout_height="wrap_content"
-               		    android:id="@+id/sett_saveBtn"/>
+               		    android:id="@+id/sett_saveBtn"
+               		    android:onClick="saveSettings"/>
                		<Button android:text="Ajustes por defecto"
                		    android:layout_width="wrap_content"
                		    android:layout_height="wrap_content"

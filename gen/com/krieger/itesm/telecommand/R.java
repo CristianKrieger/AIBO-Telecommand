@@ -29,7 +29,7 @@ public final class R {
     }
     public static final class id {
         public static final int TerminalList=0x7f060008;
-        public static final int bottom=0x7f060024;
+        public static final int bottom=0x7f060026;
         public static final int btn_arch=0x7f060004;
         public static final int btn_caminar=0x7f06000e;
         public static final int btn_config=0x7f060005;
@@ -42,6 +42,8 @@ public final class R {
         public static final int btn_terminal=0x7f060002;
         public static final int commandLine=0x7f060007;
         public static final int conexion=0x7f06000c;
+        public static final int editIP=0x7f06001b;
+        public static final int editPort=0x7f06001c;
         public static final int encendidoLEDS=0x7f06000b;
         public static final int encendidoMotores=0x7f06000a;
         public static final int fdButtonSelect=0x7f060017;
@@ -55,16 +57,16 @@ public final class R {
         public static final int layout_funciones=0x7f060009;
         public static final int layout_terminal=0x7f060006;
         public static final int path=0x7f060018;
-        public static final int sett_cierreConexion=0x7f06001c;
-        public static final int sett_historial=0x7f060020;
-        public static final int sett_osysdebug=0x7f06001f;
-        public static final int sett_osysprint=0x7f06001e;
-        public static final int sett_perdidaConexion=0x7f06001d;
-        public static final int sett_resetBtn=0x7f060022;
-        public static final int sett_saveBtn=0x7f060021;
+        public static final int sett_cierreConexion=0x7f06001e;
+        public static final int sett_historial=0x7f060022;
+        public static final int sett_osysdebug=0x7f060021;
+        public static final int sett_osysprint=0x7f060020;
+        public static final int sett_perdidaConexion=0x7f06001f;
+        public static final int sett_resetBtn=0x7f060024;
+        public static final int sett_saveBtn=0x7f060023;
         public static final int spinnerFuncBas=0x7f060013;
-        public static final int toggle_servicio=0x7f06001b;
-        public static final int top=0x7f060023;
+        public static final int toggle_servicio=0x7f06001d;
+        public static final int top=0x7f060025;
     }
     public static final class layout {
         public static final int filerow=0x7f030000;

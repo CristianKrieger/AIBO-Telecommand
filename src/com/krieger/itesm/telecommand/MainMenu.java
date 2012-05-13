@@ -16,6 +16,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -49,6 +51,7 @@ public class MainMenu extends Activity {
 	int activeScreen;
 	LinearLayout currentLayout;
 	ProgressDialog pd;
+	public static final String PREFS_NAME = "PrefsFile";
 	
 	private final static int TERMINAL=0;
 	private final static int FUNC=1;
@@ -89,62 +92,90 @@ public class MainMenu extends Activity {
 	boolean mIsBound;
     final Messenger mMessenger = new Messenger(new IncomingHandler());
     boolean connected=false;
+    boolean motorState=false;
     
 	private class IncomingHandler extends Handler {
 	    @Override
 	    public void handleMessage(Message msg) {
 	        switch (msg.what) {
 	        case ConnectionService.MSG_SET_INT_VALUE:
-	        	if(msg.getData().getInt("Finished")==1){
+	        	int finish = msg.getData().getInt("Finished");
+	        	int c1=msg.getData().getInt("Connection");
+	        	int d1=msg.getData().getInt("Disconnect");
+	        	int c2=msg.getData().getInt("ConnectionEstablished");
+	        	int f1=msg.getData().getInt("SendFile");
+	        	int p1=msg.getData().getInt("Ping");
+	        	int c3=msg.getData().getInt("ConnectionLost");
+	        	if(finish==1){
 	        		pd.dismiss();
 	        		connect.setEnabled(true);
+	        		finish=0;
+	        		break;
 	        	}
-	        	break;
-	        case ConnectionService.MSG_SET_BOOLEAN_VALUE:
-	        	boolean c1=msg.getData().getBoolean("Connection");
-	        	boolean d1=msg.getData().getBoolean("Disconnect");
-	        	boolean c2=msg.getData().getBoolean("ConnectionEstablished");
-	        	boolean f1=msg.getData().getBoolean("SendFile");
-	        	if(c1){
+	        	if(c1==1){
 	        		connected=true;
 	        		Toast.makeText(getApplicationContext(), "¡Ya hay conexión!", Toast.LENGTH_LONG).show();
+	        		c1=0;
 	        		break;
 	        	}
-	        	if(!c1){
+	        	if(c1==-1){
 	        		connected=false;
 	        		Toast.makeText(getApplicationContext(), "¡No hay conexión!", Toast.LENGTH_LONG).show();
+	        		c1=0;
 	        		break;
 	        	}
-	        	if(d1){
+	        	if(d1==1){
 	        		connected=false;
 	        		Toast.makeText(getApplicationContext(), "¡Conexión cerrada!", Toast.LENGTH_LONG).show();
+	        		d1=0;
 	        		break;
 	        	}
-	        	if(!d1){
+	        	if(d1==-1){
 	        		connected=false;
 	        		Toast.makeText(getApplicationContext(), "¡Error al cerrar la conexión!", Toast.LENGTH_LONG).show();
+	        		d1=0;
 	        		break;
 	        	}
-	        	if(c2){
+	        	if(c2==1){
 	        		connected=true;
 	        		Toast.makeText(getApplicationContext(), "¡Conexión Establecida!", Toast.LENGTH_LONG).show();
 	        		connect.setEnabled(true);
+	        		c2=0;
 	        		break;
 	        	}
-	        	if(!c2){
+	        	if(c2==-1){
 	        		connected=false;
 	        		Toast.makeText(getApplicationContext(), "¡Error al establecer la conexión!", Toast.LENGTH_LONG).show();
 	        		connect.setEnabled(true);
 	        		connect.setChecked(false);
+	        		c2=0;
 	        		break;
 	        	}
-	        	if(f1){
+	        	if(f1==1){
 	        		Toast.makeText(getApplicationContext(), "¡Archivo Enviado correctamente!", Toast.LENGTH_LONG).show();
+	        		f1=0;
 	        		break;
 	        	}
-	        	else
+	        	if(f1==-1){
 	        		Toast.makeText(getApplicationContext(), "¡Error al enviar el archivo!", Toast.LENGTH_LONG).show();
-	        	break;
+	        		f1=0;
+	        		break;
+	        	}
+	        	if(p1==1){
+	        		Toast.makeText(getApplicationContext(), "El AIBO ha respondido", Toast.LENGTH_LONG).show();
+	        		break;
+	        	}
+	        	if(p1==-1){
+	        		Toast.makeText(getApplicationContext(), "El AIBO no respondió", Toast.LENGTH_LONG).show();
+	        		break;
+	        	}
+	        	if(c3==1){
+	        		Toast.makeText(getApplicationContext(), "Se ha perdido la conexión", Toast.LENGTH_LONG).show();
+	        		connected=false;
+	        		connect.setChecked(false);
+	        		motors.setChecked(false);
+	        		break;
+	        	}
 	        default:
 	            super.handleMessage(msg);
 	        }
@@ -180,31 +211,10 @@ public class MainMenu extends Activity {
 	 */
 	Spinner funcBasicas;
 	ToggleButton connect;
+	ToggleButton motors;
 	
-	/**
-	 * Métodos del Life-Cycle
-	 */
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        setContentView(R.layout.main);
-        boolean saved=false;
-        /**
-         * Inicializacion de servicio
-         */
-        doBindService();
-        
-        if(savedInstanceState!=null){
-        	activeScreen=savedInstanceState.getInt("ActiveScreen");
-        	historial=(Historial)savedInstanceState.getSerializable("Historial");
-        	comandos=historial.datos;
-        	currentPath=savedInstanceState.getString("Path");   
-        	saved=true;
-        }else
-        	activeScreen=TERMINAL;
-        
-        /**
+	private void initializeUI(){
+		/**
          * Codigo de Inicializacion de Terminal
          */
         currentLayout=(LinearLayout)findViewById(R.id.layout_terminal);
@@ -253,46 +263,91 @@ public class MainMenu extends Activity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         funcBasicas.setAdapter(adapter);
         connect=(ToggleButton)findViewById(R.id.conexion);
-        
+        motors=(ToggleButton)findViewById(R.id.encendidoMotores);
+	}
+	
+	/**
+	 * Métodos del Life-Cycle
+	 */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        setContentView(R.layout.main);
         /**
-         * Inicialización por cambio de orientación
+         * Inicializacion de servicio
          */
-        if(saved){
-        	ImageView btn=(ImageView)findViewById(R.id.btn_terminal);
-        	switch(activeScreen){
-        	case(FUNC):
-        		currentLayout.setVisibility(GONE);
-        		currentLayout=(LinearLayout)findViewById(R.id.layout_funciones);
-    			currentLayout.setVisibility(VISIBLE);
-    			btn.setImageDrawable(getResources().getDrawable(R.drawable.btn_term_n));
-    			btn=(ImageView)findViewById(R.id.btn_func);
-    			btn.setImageDrawable(getResources().getDrawable(R.drawable.btn_func_p));
-        		break;
-        	case(ARCHIVO):
-        		currentLayout.setVisibility(GONE);
-	    		currentLayout=(LinearLayout)findViewById(R.id.layout_archivo);
-				currentLayout.setVisibility(VISIBLE);
-				btn.setImageDrawable(getResources().getDrawable(R.drawable.btn_term_n));
-				btn=(ImageView)findViewById(R.id.btn_arch);
-				btn.setImageDrawable(getResources().getDrawable(R.drawable.btn_arch_p));
-        		break;
-        	case(CONFIG):
-        		currentLayout.setVisibility(GONE);
-	    		currentLayout=(LinearLayout)findViewById(R.id.layout_config);
-				currentLayout.setVisibility(VISIBLE);
-				btn.setImageDrawable(getResources().getDrawable(R.drawable.btn_term_n));
-				btn=(ImageView)findViewById(R.id.btn_config);
-				btn.setImageDrawable(getResources().getDrawable(R.drawable.btn_config_p));
-        		break;
-        	}
-        }
+        doBindService();
+        
+        if(savedInstanceState!=null){
+        	activeScreen=savedInstanceState.getInt("ActiveScreen");
+        	historial=(Historial)savedInstanceState.getSerializable("Historial");
+        	comandos=historial.datos;
+        	currentPath=savedInstanceState.getString("Path");
+        	connected=savedInstanceState.getBoolean("Connected");
+        	motorState=savedInstanceState.getBoolean("MotorState");
+        }else
+        	activeScreen=TERMINAL;
+        
+        initializeUI();
+    }
+    
+    /**
+     * Inicialización por cambio de orientación
+     */
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+    	super.onConfigurationChanged(newConfig);
+    	setContentView(R.layout.main);
+    	
+    	doBindService();
+    	initializeUI();
+    	
+    	if(motorState){
+    		motors.setChecked(true);
+    	}
+    	if(connected){
+    		connect.setChecked(true);
+    	}
+    	ImageView btn=(ImageView)findViewById(R.id.btn_terminal);
+    	switch(activeScreen){
+    	case(FUNC):
+    		currentLayout.setVisibility(GONE);
+    		currentLayout=(LinearLayout)findViewById(R.id.layout_funciones);
+			currentLayout.setVisibility(VISIBLE);
+			btn.setImageDrawable(getResources().getDrawable(R.drawable.btn_term_n));
+			btn=(ImageView)findViewById(R.id.btn_func);
+			btn.setImageDrawable(getResources().getDrawable(R.drawable.btn_func_p));
+    		break;
+    	case(ARCHIVO):
+    		currentLayout.setVisibility(GONE);
+    		currentLayout=(LinearLayout)findViewById(R.id.layout_archivo);
+			currentLayout.setVisibility(VISIBLE);
+			btn.setImageDrawable(getResources().getDrawable(R.drawable.btn_term_n));
+			btn=(ImageView)findViewById(R.id.btn_arch);
+			btn.setImageDrawable(getResources().getDrawable(R.drawable.btn_arch_p));
+    		break;
+    	case(CONFIG):
+    		currentLayout.setVisibility(GONE);
+    		currentLayout=(LinearLayout)findViewById(R.id.layout_config);
+			currentLayout.setVisibility(VISIBLE);
+			btn.setImageDrawable(getResources().getDrawable(R.drawable.btn_term_n));
+			btn=(ImageView)findViewById(R.id.btn_config);
+			btn.setImageDrawable(getResources().getDrawable(R.drawable.btn_config_p));
+    		break;
+    	}
     }
         
     @Override
 	protected void onStop() {
     	doUnbindService();
-    	stopService(new Intent(MainMenu.this,ConnectionService.class));
 		super.onStop();
+	}
+
+	@Override
+	protected void onDestroy() {
+		stopService(new Intent(MainMenu.this,ConnectionService.class));
+		super.onDestroy();
 	}
 
 	/**
@@ -305,6 +360,8 @@ public class MainMenu extends Activity {
 		historial=new Historial(comandos);
 		state.putSerializable("Historial", historial);
 		state.putString("Path", currentPath);
+		state.putBoolean("Connected", connected);
+		state.putBoolean("MotorState", motorState);
 	}
     
     /**
@@ -471,6 +528,34 @@ public class MainMenu extends Activity {
 			desconectarse();
 	}
 	
+	public void toggleMotors(View v){
+		ToggleButton t = (ToggleButton) v;
+		if(!t.isChecked()){
+			if(connected)
+				turnOnMotors();
+			else{
+				Toast.makeText(getApplicationContext(), "¡No hay conexión!", Toast.LENGTH_LONG).show();
+				t.setChecked(false);
+			}
+		}
+		else{
+			if(connected)
+				turnOffMotors();
+			else{
+				Toast.makeText(getApplicationContext(), "¡No hay conexión!", Toast.LENGTH_LONG).show();
+				t.setChecked(false);
+			}
+		}
+	}
+	
+	public void toggleLEDs(View v){
+		ToggleButton t = (ToggleButton) v;
+		if(!t.isChecked())
+			turnAllLEDsON();
+		else
+			turnAllLEDsOff();
+	}
+	
 	public void conectarse(){
 		sendBoolToService("ToggleConnection", true);
 		pd = ProgressDialog.show(this, "Conexión al AIBO", "Conectándose...", true, false);
@@ -483,10 +568,24 @@ public class MainMenu extends Activity {
 		sendBoolToService("ToggleConnection", false);
 	}
 	
+	private void turnOnMotors(){
+		sendStringToService("Command", "motor on;");
+	}
+	
+	private void turnOffMotors(){
+		sendStringToService("Command", "motor off;");
+	}
+	
+	private void turnAllLEDsON(){
+		//TODO: Find correct code
+	}
+	
+	private void turnAllLEDsOff(){
+		//TODO: Find correct code
+	}
+	
 	public void pingMethod(View v){
-		/**
-		 * TODO:Hacer ping
-		 */
+		sendIntToService("Ping", 1);
 	}
     
     /**
@@ -510,6 +609,19 @@ public class MainMenu extends Activity {
 	    	terminalInput.setText("");
 	    	terminal.setAdapter(new TerminalAdapter(getApplicationContext()));
 		}
+    }
+    
+    /**
+     * Métodos de preferencias
+     */
+    public void saveSettings(View v){
+    	EditText ip = (EditText)findViewById(R.id.editIP);
+    	EditText port = (EditText)findViewById(R.id.editPort);
+    	SharedPreferences netSettings = getSharedPreferences(PREFS_NAME, 0);
+        SharedPreferences.Editor editor = netSettings.edit();
+        editor.putString("IP", ip.getText().toString());
+        editor.putInt("Port", Integer.getInteger(port.getText().toString()));
+        editor.commit();
     }
     
     /**

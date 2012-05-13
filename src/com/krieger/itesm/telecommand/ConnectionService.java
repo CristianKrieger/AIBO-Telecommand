@@ -3,7 +3,11 @@ package com.krieger.itesm.telecommand;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -31,6 +35,7 @@ public class ConnectionService extends Service implements Runnable{
 	 * Variables de Notificación
 	 */
 	private NotificationManager nm;
+	Timer tmr;
 	
 	/**
 	 * Variables para Comunicación con UI
@@ -63,7 +68,9 @@ public class ConnectionService extends Service implements Runnable{
                 mClients.remove(msg.replyTo);
                 break;
             case MSG_SET_INT_VALUE:
-            	//sendInt(msg.getData().getInt("int1"));
+            	int p1=msg.getData().getInt("Ping");
+            	if(p1==1)
+            		pingMethod(true);
                 break;
             case MSG_SET_STRING_VALUE:
             	String file=msg.getData().getString("File");
@@ -86,7 +93,7 @@ public class ConnectionService extends Service implements Runnable{
         }
     }
     
-    private void sendBool(String name, boolean boolvaluetosend) {
+    /*private void sendBool(String name, boolean boolvaluetosend) {
     	for (int i=mClients.size()-1; i>=0; i--) {
             try {
             	Bundle b = new Bundle();
@@ -98,13 +105,13 @@ public class ConnectionService extends Service implements Runnable{
             	mClients.remove(i);
             }
         }
-    }
+    }*/
     
-    private void sendInt(int intvaluetosend) {
+    private void sendInt(String name, int intvaluetosend) {
     	for (int i=mClients.size()-1; i>=0; i--) {
             try {
             	Bundle b = new Bundle();
-                b.putInt("Finished", intvaluetosend);
+                b.putInt(name, intvaluetosend);
                 Message msg = Message.obtain(null, MSG_SET_INT_VALUE);
                 msg.setData(b);
                 mClients.get(i).send(msg);
@@ -170,49 +177,105 @@ public class ConnectionService extends Service implements Runnable{
 					
 				}
 				archivoEntrada.close();
-				sendBool("SendFile", true);
+				sendInt("SendFile", 1);
 				return true;
 			}
 			catch(IOException ioe)
 			{
-				sendBool("SendFile", false);
+				sendInt("SendFile", -1);
 				Log.e("Error", ioe.toString());
 			}
 		
 		}
 		else
 		{
-			sendBool("Connection", false);
+			sendInt("Connection", -1);
 		}
     	return false;
     }
     
     private void connectToAIBO(){    	
     	SharedPreferences netSettings = getSharedPreferences(PREFS_NAME, 0);
-        String ip = netSettings.getString("IP", "192.168.1.3");
+        String ip = netSettings.getString("IP", "192.168.1.1");
         int port = netSettings.getInt("Port", 54000);
     	
     	conector=new Telnet();
 		if(conector.socket == null){
-			sendBool("ConnectionEstablished",conector.establecerConexion(ip, port));
-			
+			if(conector.establecerConexion(ip, port))
+				sendInt("ConnectionEstablished",1);
+			else
+				sendInt("ConnectionEstablished",-1);			
 		}
 		else
-			sendBool("Connection", true);
+			sendInt("Connection", 1);
+		
+		TimerTask t = new TimerTask() {
+			
+			@Override
+			public void run() {
+				if(!isAIBOAlive())
+					connectionLost();
+			}
+		};
+		
+		tmr = new Timer();
+		tmr.schedule(t, 10, 2500);
     }
     
     private void disconnectFromAIBO(){
-    	if(conector.socket != null && conector.bufferEntrada != null && conector.bufferSalida != null)
-			sendBool("Disconnect",conector.cerrarConexion());
+    	if(conector.socket != null && conector.bufferEntrada != null && conector.bufferSalida != null){
+    			if(conector.cerrarConexion())
+    				sendInt("Disconnect",1);
+    			else
+    				sendInt("Disconnect",-1);
+    	}
 		else
-			sendBool("Connection", false);
+			sendInt("Connection", -1);
     }
     
     private void sendCommandToAIBO(String s){
     	if(conector.socket != null)
 			conector.enviarDatos(s);
 		else
-			sendBool("Connection", false);
+			sendInt("Connection", -1);
+    }
+    
+    private boolean pingMethod(boolean response){
+		SharedPreferences netSettings = getSharedPreferences(PREFS_NAME, 0);
+        String ip = netSettings.getString("IP", "192.168.1.1");
+        InetAddress in=null;
+	    try {
+	    	in = InetAddress.getByName(ip);
+	    } catch (UnknownHostException e) {
+	    	Log.e("ERROR","Dirección no es correcta");
+	    	return false;
+	    }
+	    try {
+	    	if(in.isReachable(5000)){
+	    		if(response)
+	    			sendInt("Ping", 1);
+	    		return true;
+	    	}
+	    	else{
+	    		if(response)
+	    			sendInt("Ping",-1);
+	    		else
+	    			sendInt("ConnectionLost", 1);
+	    		return false;
+	    	}
+	  	} catch (IOException e){
+	  		Log.e("ERROR","Dirección no es correcta");
+	  		return false;
+	  	}
+	}
+    
+    public boolean isAIBOAlive(){
+    	return pingMethod(false);
+    }
+    
+    public void connectionLost(){
+    	sendInt("ConnectionLost", 1);
+    	tmr.cancel();
     }
     
     public void run() {
@@ -223,7 +286,7 @@ public class ConnectionService extends Service implements Runnable{
 	private Handler handler = new Handler() {
 	        @Override
 	        public void handleMessage(Message msg) {
-	                sendInt(1);
+	                sendInt("Finished", 1);
 	        }
 	};
 }
