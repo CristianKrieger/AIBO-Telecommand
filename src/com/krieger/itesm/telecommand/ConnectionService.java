@@ -196,7 +196,7 @@ public class ConnectionService extends Service implements Runnable{
     
     private void connectToAIBO(){    	
     	SharedPreferences netSettings = getSharedPreferences(PREFS_NAME, 0);
-        String ip = netSettings.getString("IP", "192.168.1.1");
+        String ip = netSettings.getString("IP", "192.168.1.2");
         int port = netSettings.getInt("Port", 54000);
     	
     	conector=new Telnet();
@@ -242,7 +242,7 @@ public class ConnectionService extends Service implements Runnable{
     
     private boolean pingMethod(boolean response){
 		SharedPreferences netSettings = getSharedPreferences(PREFS_NAME, 0);
-        String ip = netSettings.getString("IP", "192.168.1.1");
+        String ip = netSettings.getString("IP", "192.168.1.2");
         InetAddress in=null;
 	    try {
 	    	in = InetAddress.getByName(ip);

@@ -619,8 +619,8 @@ public class MainMenu extends Activity {
     	EditText port = (EditText)findViewById(R.id.editPort);
     	SharedPreferences netSettings = getSharedPreferences(PREFS_NAME, 0);
         SharedPreferences.Editor editor = netSettings.edit();
-        editor.putString("IP", ip.getText().toString());
-        editor.putInt("Port", Integer.getInteger(port.getText().toString()));
+        editor.putString("IP", "192.168.1.2");
+        editor.putInt("Port", 54000);
         editor.commit();
     }
     
